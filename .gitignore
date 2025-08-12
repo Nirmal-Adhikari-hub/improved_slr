@@ -1,0 +1,11 @@
+*__pycache__*
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+*.pyd
+*.pkl.gz
+*.pkl.bz2
+*.pkl.xz
+*.pkl.lz4
+*.pkl.zstd
