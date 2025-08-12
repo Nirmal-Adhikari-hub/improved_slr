@@ -1,0 +1,49 @@
+seed: 42
+
+data:
+  dataset: "phoenix2014"
+  dataset_root: "/nas/Dataset/Phoenix/phoenix2014-release/phoenix-2014-multisigner"
+  frame_subdir: "features/fullFrame-256x256px"    # or "features/fullFrame-210x260px"
+  preprocess_root: "./preprocess"                 # contains preprocess/phoenix2014/{train,dev,test}_info.npy
+  gloss_dict_path: "./preprocess/phoenix2014/gloss_dict.npy"
+
+  datatype: "video"           # "video" or "features"
+  frame_interval: 1
+  image_scale: 1.0
+  input_size: 224
+  kernel_spec: ["K5","P2","K5","P2"]  # must match your temporal conv stack
+
+  batch_size: 4
+  num_workers: 4
+
+model:
+  num_classes: 1296           # len(gloss_dict) + 1 (blank)
+  blank_id: 0
+  use_features: false
+  input_feature_dim: 512
+  backbone:
+    name: "resnet18"
+    pretrained: true
+    out_dim: 512
+  temporal:
+    hidden_dims: [512, 512]
+    kernel_size: 5
+    dropout: 0.1
+
+optimiser:
+  name: "adamw"
+  lr: 0.0001
+  weight_decay: 0.01
+
+scheduler:
+  name: "cosine"
+  t_max: 50
+  eta_min: 1.0e-6
+
+trainer:
+  epochs: 10
+  save_dir: "outputs"
+  grad_accum_steps: 1
+  amp: true
+  ema: false
+  ema_decay: 0.999
