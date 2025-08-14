@@ -48,8 +48,10 @@ improved_slr/
     metrics.py                  # WER utilities (DP Levenshtein)
   outputs/                      # logs, (TB/ckpts will land here)
 Model/trainer files will be added next; dataloader parity is locked in first to de-risk training.
+```
 
 ## Exact SlowFast Data Semantics
+
 - Reads `preprocess/{dataset}/{split}_info.npy` (same structure).
 
 - Loads `gloss_dict.npy` mapping token → `[id, count]`; uses `[0]` as class ID.
