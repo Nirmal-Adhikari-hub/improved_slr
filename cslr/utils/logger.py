@@ -27,7 +27,7 @@ def setup_logger(save_dir: str, name: str = "train", level=logging.INFO) -> logg
     fmt = "%(asctime)s | %(levelname)s | %(message)s"
     try:
         import colorlog
-        cfmt = "%%(log_color)s" + fmt
+        cfmt = "%(log_color)s" + fmt
         ch.setFormatter(colorlog.ColoredFormatter(cfmt))
     except Exception:
         ch.setFormatter(logging.Formatter(fmt))

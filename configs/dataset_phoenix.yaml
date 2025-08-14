@@ -3,21 +3,21 @@ seed: 42
 data:
   dataset: "phoenix2014"
   dataset_root: "/nas/Dataset/Phoenix/phoenix2014-release/phoenix-2014-multisigner"
-  frame_subdir: "features/fullFrame-256x256px"    # or "features/fullFrame-210x260px"
-  preprocess_root: "./preprocess"                 # contains preprocess/phoenix2014/{train,dev,test}_info.npy
+  frame_subdir: "features/fullFrame-256x256px"
+  preprocess_root: "./preprocess" # contains preprocess/phoenix2014/{train,dev,test}_info.npy
   gloss_dict_path: "./preprocess/phoenix2014/gloss_dict.npy"
 
-  datatype: "video"           # "video" or "features"
+  datatype: "video"
   frame_interval: 1
   image_scale: 1.0
   input_size: 224
-  kernel_spec: ["K5","P2","K5","P2"]  # must match your temporal conv stack
+  kernel_spec: ["K5", "P2", "K5", "P2"] # match the temporal conv stack
 
   batch_size: 4
   num_workers: 4
 
 model:
-  num_classes: 1296           # len(gloss_dict) + 1 (blank)
+  num_classes: 1296
   blank_id: 0
   use_features: false
   input_feature_dim: 512
