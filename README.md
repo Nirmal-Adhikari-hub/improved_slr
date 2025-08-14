@@ -60,7 +60,7 @@ Model/trainer files will be added next; dataloader parity is locked in first to 
 
 - **Augmentation order (train)**: `RandomCrop` → `RandomHorizontalFlip(0.5)` → `Resize` → `ToTensor` → `TemporalRescale`.
 
--** Dev/Test aug**: CenterCrop → Resize → ToTensor.
+- **Dev/Test aug**: CenterCrop → Resize → ToTensor.
 
 - **Normalization**: ((x/255) - 0.45) / 0.225.
 
