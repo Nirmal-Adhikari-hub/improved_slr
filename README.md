@@ -4,7 +4,7 @@ A clean, modular training pipeline for **Continuous Sign Language Recognition (C
 
 ---
 
-## 🔔 What’s New (Aug 13–14, 2025)
+## What’s New (Aug 13–14, 2025)
 
 **Major additions since the previous update:**
 
@@ -18,7 +18,7 @@ A clean, modular training pipeline for **Continuous Sign Language Recognition (C
 
 ---
 
-## 🚀 What this repo offers
+## What this repo offers
 
 - Train/evaluate a CSLR model with **config-driven** hyperparameters.
 - Use the **same data protocol** as the original SlowFast pipeline (augmentation order, normalization, label mapping, collate logic).
@@ -28,7 +28,7 @@ A clean, modular training pipeline for **Continuous Sign Language Recognition (C
 
 ---
 
-## 📊 What’s Implemented (So Far)
+## What’s Implemented (So Far)
 
 **Directory Structure**
 
