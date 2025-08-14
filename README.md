@@ -4,126 +4,166 @@ A clean, modular training pipeline for **Continuous Sign Language Recognition (C
 
 ---
 
+## 🔔 What’s New (Aug 13–14, 2025)
+
+**Major additions since the previous update:**
+
+- **PhoenixFeeder (exact parity):** `data_loaders/phoenix_feeder.py` mirrors the original SlowFast dataloading (paths, aug order, normalization, label mapping, stride-aware padding).
+- **Kernel-aware collate:** `make_collate_fn()` uses `kernel_spec` (e.g., `["K5","P2","K5","P2"]`) to compute **left_pad** and **total_stride** exactly like the authors’ repo.
+- **Sanity checker:** `scripts/check_dataloader.py` validates shapes, per-sample lengths, and padding math. Supports **CLI overrides** and a `--no_time_aug` flag.
+- **Cleaner config UX:** `utils/config.py` + `--override` lets you change machine/dataset parameters without editing YAML.
+- **Logging:** Structured console + file logging via `utils/logger.py`.
+
+> Verified on Phoenix2014: train transforms, dev/test transforms, normalization, CTC-style label concat, and collate behavior match the original pipeline.
+
+---
+
 ## 🚀 What this repo offers
 
-* Train/evaluate a CSLR model with config-driven hyperparameters.
-* Use the **same data protocol** as the original SlowFast pipeline (augmentation order, normalization, label mapping, collate logic).
-* Swap datasets/machines by editing a **single config file**.
-* Integrated logging via TensorBoard, automatic best checkpoint saving, and clean run management.
+- Train/evaluate a CSLR model with **config-driven** hyperparameters.
+- Use the **same data protocol** as the original SlowFast pipeline (augmentation order, normalization, label mapping, collate logic).
+- Swap datasets/machines by editing a **single config file** (or CLI `--override`).
+- **Logging now:** console + file logs.  
+  **Coming next:** TensorBoard, automatic best checkpoint saving, and full trainer harness.
 
 ---
 
 ## 📊 What’s Implemented (So Far)
 
-**Directory Structure**:
+**Directory Structure**
 
 ```bash
-cslr_project/
+improved_slr/
   configs/
-    dataset_phoenix.yaml      # dataset + training config (edit paths here)
-    default.yaml              # generic starter config
-  cslr/
-    data_loader/
-      video_aug.py            # port of utils/video_augmentation.py (used ops)
-      phoenix_feeder.py       # modern port of BaseFeeder + collate
-    models/
-      conv2d_backbone.py      # per-frame ResNet backbone (starter)
-      temporal_conv.py        # simple 1D temporal conv stack (starter)
-      classifier.py           # weight-normalised linear head
-      decoder.py              # greedy CTC decoder (baseline)
-      slr_model.py            # wiring backbone + temporal + head
-    trainers/
-      trainer.py              # AMP, grad-accum, TB logging, best ckpt
-    utils/
-      config.py               # YAML/JSON loader + dot-override
-      logger.py               # coloured console + file logs
-      scheduler.py            # LR schedulers (cosine, step, one-cycle)
-      metrics.py              # WER/CER utilities (DP Levenshtein)
+    dataset_phoenix.yaml        # dataset + dataloader config (edit paths here)
+  data_loaders/
+    video_aug.py                # port of used ops from utils/video_augmentation.py
+    phoenix_feeder.py           # modern port of BaseFeeder + stride-aware collate
   scripts/
-    train.py                  # entry point
-  outputs/                    # runs, logs, checkpoints
-```
+    check_dataloader.py         # sanity checker for shapes/padding/labels
+  utils/
+    config.py                   # YAML/JSON loader + CLI dot-overrides
+    logger.py                   # coloured console + file logs
+    scheduler.py                # LR schedulers (cosine, step, one-cycle)
+    metrics.py                  # WER utilities (DP Levenshtein)
+  outputs/                      # logs, (TB/ckpts will land here)
+Model/trainer files will be added next; dataloader parity is locked in first to de-risk training.
 
----
+## Exact SlowFast Data Semantics
+- Reads `preprocess/{dataset}/{split}_info.npy` (same structure).
 
-## 📖 Exact SlowFast Data Semantics
+- Loads `gloss_dict.npy` mapping token → `[id, count]`; uses `[0]` as class ID.
 
-* Reads `preprocess/{dataset}/{split}_info.npy` (same format).
-* Loads `gloss_dict.npy` mapping token → `[id, count]`, uses `[0]` as class ID.
-* **Frame sampling**: random offset + frame\_interval stride (same).
-* **Augmentation order (train)**:
+- **Frame sampling**: random offset + `frame_interval` stride.
 
-  * `RandomCrop` → `RandomHorizontalFlip(0.5)` → `Resize` → `ToTensor` → `TemporalRescale`
-* **Test aug**: `CenterCrop` → `Resize` → `ToTensor`
-* **Normalization**: `((x/255) - 0.45) / 0.225` (same as original).
-* **Collate**: sorted by length, padded with left-padding and edge-padding based on `kernel_spec`.
-* **Labels**: concatenated (CTC-style), not padded.
+- **Augmentation order (train)**: `RandomCrop` → `RandomHorizontalFlip(0.5)` → `Resize` → `ToTensor` → `TemporalRescale`.
 
----
+-** Dev/Test aug**: CenterCrop → Resize → ToTensor.
 
-## 📃 Config-First UX + CLI Override
+- **Normalization**: ((x/255) - 0.45) / 0.225.
 
-Edit YAML configs like:
+- **Collate**: length-sort → pad with **left-pad** and edge-pad using kernel_spec.
+
+- **Labels**: concatenated (CTC-style), not padded; companion label_lengths.
+
+## Config-First UX + CLI Overrides
+
+Edit YAML:
 
 ```yaml
 # configs/dataset_phoenix.yaml
-...
+seed: 42
 data:
+  dataset: "phoenix2014"
   dataset_root: /nas/Dataset/Phoenix/phoenix2014-release/phoenix-2014-multisigner
   frame_subdir: features/fullFrame-256x256px
   preprocess_root: ./preprocess
   gloss_dict_path: ./preprocess/phoenix2014/gloss_dict.npy
+
+  datatype: video
+  frame_interval: 1
+  image_scale: 1.0
+  input_size: 224
+  kernel_spec: ["K5","P2","K5","P2"]
+
+  batch_size: 4
+  num_workers: 4
+```
+Override fields inline:
+```bash
+# change frame interval
+PYTHONPATH=. python scripts/check_dataloader.py -c configs/dataset_phoenix.yaml \
+  --mode train --override data.frame_interval 2
+
+# switch to 210x260 frames
+PYTHONPATH=. python scripts/check_dataloader.py -c configs/dataset_phoenix.yaml \
+  --mode train --override data.frame_subdir features/fullFrame-210x260px
+
+# disable TemporalRescale in train (stable T for debugging)
+PYTHONPATH=. python scripts/check_dataloader.py -c configs/dataset_phoenix.yaml \
+  --mode train --no_time_aug
+```
+---
+## Dataloader Sanity Check
+
+Run:
+```bash
+# Train mode (TemporalRescale active; T varies per run)
+PYTHONPATH=. python scripts/check_dataloader.py -c configs/dataset_phoenix.yaml --mode train
+
+# Dev/Test mode (no TemporalRescale; stable T)
+PYTHONPATH=. python scripts/check_dataloader.py -c configs/dataset_phoenix.yaml --mode dev
 ```
 
-Override any field inline at the CLI:
+**Reading the logs**
+
+- Different `T` for the **same sample** across runs in **train** is expected (TemporalRescale randomizes time).
+
+- `left_pad` and `total_stride` come from `kernel_spec`.
+For `["K5","P2","K5","P2"]` → `left_pad=6`, `total_stride=4`.
+
+- Batched `T_pad` is computed via:
+  ```ini
+  right_pad = ceil(max_len/stride)*stride - max_len + left_pad
+  T_pad     = max_len + left_pad + right_pad
+  ```
+
+
+- The checker verifies `T_pad` consistency; warnings indicate spec/input mismatches.
+
+---
+
+## SlowFast Code Comparison (1:1 Parity)
+| Original SlowFast repo                    | This repo (modern port)          |
+| ----------------------------------------- | -------------------------------- |
+| `dataset/dataloader_video.py::BaseFeeder` | `data_loaders/phoenix_feeder.py` |
+| `utils/video_augmentation.py` (used ops)  | `data_loaders/video_aug.py`      |
+| `*_info.npy` loading                      | Same                             |
+| `gloss_dict.npy` `[0]` → class id         | Same                             |
+| Random offset + `frame_interval`          | Same                             |
+| Phoenix/CSL/CSL-Daily path rules          | Same (`frame_subdir` toggle)     |
+| `(x/255 - 0.45)/0.225` normalization      | Same                             |
+| Collate with kernel-spec padding/stride   | Same                             |
+| `(video, len, labels, label_lens, info)`  | Same tensors + order             |
+
+---
+
+## Data Layout Requirements
+**Dataset Root**
 
 ```bash
-python cslr_project/scripts/train.py -c configs/dataset_phoenix.yaml \
-  --override trainer.epochs=1 data.batch_size=2
-```
-
----
-
-## 🚀 Training QoL Features
-
-* AMP mixed-precision support
-* Gradient accumulation
-* TensorBoard scalars
-* Periodic and best model checkpointing
-* Clean and informative logging (console + file)
-
----
-
-## ✅ SlowFast Code Comparison (1:1 Parity)
-
-| Original SlowFast Repo                         | This Repo (Modern Port)                             |
-| ---------------------------------------------- | --------------------------------------------------- |
-| `dataset/dataloader_video.py::BaseFeeder`      | `cslr/data_loader/phoenix_feeder.py::PhoenixFeeder` |
-| Augmentations in `utils/video_augmentation.py` | `cslr/data_loader/video_aug.py`                     |
-| `inputs_list = np.load(.../{mode}_info.npy)`   | Same (configurable path via `preprocess_root`)      |
-| `gloss_dict.npy` mapping via `[0]`             | Same                                                |
-| Random offset + frame\_interval subsampling    | Same                                                |
-| Phoenix/CSL/CSL-Daily path rules               | Same (toggle via `frame_subdir`)                    |
-| Normalization `(x/255 - 0.45)/0.225`           | Same                                                |
-| Collate function based on `kernel_spec`        | Same (fully dynamic, no globals)                    |
-| Return `(video, len, label, label_len, info)`  | Same tensors + order                                |
-
----
-
-## 📁 Data Layout Requirements
-
-**Dataset Root**:
-
-```
 /nas/Dataset/Phoenix/phoenix2014-release/phoenix-2014-multisigner/
   features/
-    fullFrame-210x260px/  # or fullFrame-256x256px
+    fullFrame-210x260px/
+    fullFrame-256x256px/
       train/01April.../*.png
+      dev/*.png
+      test/*.png
 ```
 
-**Preprocess Root**:
+**Preprocess Root**
 
-```
+```bash
 preprocess/
   phoenix2014/
     train_info.npy
@@ -134,71 +174,81 @@ preprocess/
 
 ---
 
-## 📊 Kernel Spec Decoding
+## Kernel Spec Decoding
 
-A kernel spec like:
+Example:
 
 ```yaml
-kernel_spec: ["K5", "P2", "K5", "P2"]
+kernel_spec: ["K5","P2","K5","P2"]
 ```
 
-Means:
 
-* conv1d(kernel=5) → pool(stride=2) → conv1d(kernel=5) → pool(stride=2)
+Meaning:
 
-We compute:
+- `K5` → conv1d with kernel 5
 
-* `left_pad = sum of (kernel_size-1)/2 * total_previous_stride`
-* `total_stride = product of all pool strides`
+- `P2` → temporal downsample (stride 2)
 
-This determines exact shape matching for CTC-compatible batching.
+- Sequence: conv5 → pool2 → conv5 → pool2
 
----
+Computed:
 
-## 🔧 Default Model (Starter)
+- `left_pad = Σ ((k-1)/2) * (product of previous strides)`
 
-* Per-frame ResNet backbone → (B, T, D)
-* 1D temporal conv stack → (T, B, F)
-* Classifier (weight-normalised linear)
-* Greedy CTC decoder for baseline eval
+- `total_stride = product of all pool strides`
+
+Used to determine batch `T_pad` and CTC alignment.
 
 ---
 
-## 🕊️ Roadmap
+## Default Model (Starter)
 
+- (Coming next) Minimal baseline: per-frame CNN → temporal conv → (optional) BiLSTM → CTC.
+
+- Adapter for authors’ **SlowFast R101** backbone will plug into the same trainer.
+
+---
+
+## Roadmap
 ### Phase 1 — Complete Parity
 
-* [x] Port dataset/aug/collate w/ exact SlowFast semantics
-* [x] Config-driven everything
-* [x] AMP, grad-accum, TB, best-ckpt
-* [x] Auto-derive kernel\_spec from temporal model
-* [ ] Plug in SlowFast backbone from `slr_network.py`
-* [ ] Replicate loss dict (SeqCTC, ConvCTC, SeqKD)
-* [ ] Add BiLSTM matching authors
-* [ ] Reproduce authors' WER on dev/test
+* [x] Port dataset/aug/collate with exact SlowFast semantics
+
+* [x]  Config-driven everything + CLI --override
+
+* [x]  Structured logging (console + file)
+
+* [ ]  Full trainer (AMP, grad-accum, TensorBoard, best-ckpt)
+
+* [ ]  Auto-derive kernel_spec from the temporal model
+
+* [ ]  Plug in SlowFast backbone from slr_network.py
+
+* [ ]  Replicate loss dict (SeqCTC, ConvCTC, SeqKD)
+
+* [ ]  Add BiLSTM matching authors
+
+* [ ]  Reproduce authors’ WER on dev/test
 
 ### Phase 2 — Diagnostics & Improvements
 
-* [ ] Grad-CAM hooks for hand/face/pose
-* [ ] TensorBoard CAM grid export
-* [ ] Evaluation scripts: train\_eval / dev / test
-* [ ] Beam-search decoder parity
-* [ ] DDP + DeepSpeed launcher
+* [ ]  Grad-CAM hooks (hands/face/pose)
+
+* [ ]  TensorBoard CAM grid export
+
+* [ ]  Evaluation scripts: train_eval / dev / test
+
+* [ ]  Beam-search decoder parity
+
+* [ ]  DDP + DeepSpeed launcher
 
 ### Phase 3 — Research Features
 
-* [ ] ROI-aware diffusion restoration (hands/face)
-* [ ] Feature-only training path
-* [ ] Curriculum over frame\_interval, seq\_len, and augmentation
+* [ ]  ROI-aware diffusion restoration (hands/face)
+
+* [ ]  Feature-only training path
+
+* [ ]  Curriculum over frame_interval, seq_len, augmentation
 
 ---
 
-## 🔗 TensorBoard
-
-```bash
-tensorboard --logdir cslr_project/outputs/tb
-```
-
----
-
-Happy training! 🚀
