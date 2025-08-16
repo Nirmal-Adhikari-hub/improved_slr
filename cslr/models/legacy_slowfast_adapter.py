@@ -72,12 +72,12 @@ class LegacySlowFastSLR(nn.Module):
         # forward() returns sentences when not training; in training we dont decode
         pass
 
-    def forward(self, x, len_x, label=None, label_gt=None):
+    def forward(self, x, len_x, label=None, label_lgt=None):
         """
         x: (B, T, C, H, W) for video (matches our feeder output)
         len_x: LongTensor(B,) time lengths (post-collate accounting)
         """
-        ret = self.inner(x, len_x, label, label_gt=label_gt)
+        ret = self.inner(x, len_x, label, label_lgt=label_lgt)
         # map to keys our trainer expects
         out = {
             "feat_len": ret["feat_len"], # (B,)

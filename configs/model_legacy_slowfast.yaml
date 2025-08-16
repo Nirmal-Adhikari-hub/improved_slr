@@ -2,7 +2,8 @@ seed: 42
 
 data:
   dataset: "phoenix2014"
-  dataset_root: "/nas/Dataset/Phoenix/phoenix2014-release/phoenix-2014-multisigner"
+  # dataset_root: "/nas/Dataset/Phoenix/phoenix2014-release/phoenix-2014-multisigner"
+  dataset_root: "/shared/home/xvoice/nirmal/SlowFastSign/dataset/phoenix2014/phoenix-2014-multisigner"
   frame_subdir: "features/fullFrame-256x256px"
   preprocess_root: "./preprocess"
   gloss_dict_path: "./preprocess/phoenix2014/gloss_dict.npy"
@@ -27,10 +28,10 @@ model:
   c2d_type: "slowfast101"                   # authors’ R101 backbone
   slowfast_config: "SLOWFAST_64x2_R101_50_50.yaml"
   slowfast_args: []                         # you can pass cfg overrides here if needed
-  conv_type: "conv1d"
+  conv_type: 2
   use_bn: false
   hidden_size: 1024
-  load_pkl: true
+  load_pkl: false
   weight_norm: true
   share_classifier: true
 

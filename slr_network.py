@@ -1,16 +1,18 @@
 import pdb
 import copy
-import utils
 import torch
 import types
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
-from modules.criterions import SeqKD
-from modules import BiLSTMLayer, TemporalConv
-import slowfast_modules.slowfast as slowfast
 import importlib
+
+from cslr.models.modules.decode import Decode
+from cslr.models.modules.criterions import SeqKD
+from cslr.models.modules.tconv import TemporalConv
+from cslr.models.modules.BiLSTM import BiLSTMLayer
+import cslr.models.slowfast_modules.slowfast as slowfast
 
 class Identity(nn.Module):
     def __init__(self):
@@ -51,7 +53,7 @@ class SLRModel(nn.Module):
                                    conv_type=conv_type,
                                    use_bn=use_bn,
                                    num_classes=num_classes)
-        self.decoder = utils.Decode(gloss_dict, num_classes, 'beam')
+        self.decoder = Decode(gloss_dict, num_classes, 'beam')
         self.temporal_model = BiLSTMLayer(rnn_type='LSTM', input_size=hidden_size, hidden_size=hidden_size,
                                           num_layers=2, bidirectional=True)
         if weight_norm:
