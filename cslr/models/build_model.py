@@ -1,4 +1,4 @@
-from cslr.models.legacy_slowfast_adapter import LegacySlowFastSLR
+from cslr.models.slowfast.legacy_slowfast_adapter import LegacySlowFastSLR
 
 def build_model(cfg):
     mcfg = cfg.model

@@ -7,10 +7,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
 
-from cslr.models.modules.decode import Decode
-from cslr.models.modules.criterions import SeqKD
-from cslr.models.modules import BiLSTMLayer, TemporalSlowFastFuse
-import cslr.models.slowfast_modules.slowfast as slowfast
+from cslr.models.slowfast.modules.decode import Decode
+from cslr.models.slowfast.modules.criterions import SeqKD
+from cslr.models.slowfast.modules import BiLSTMLayer, TemporalSlowFastFuse
+import cslr.models.slowfast.slowfast_modules.slowfast as slowfast
 import importlib
 
 class Identity(nn.Module):
