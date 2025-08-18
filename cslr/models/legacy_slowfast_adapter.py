@@ -22,7 +22,7 @@ class LegacySlowFastSLR(nn.Module):
 
         # ----- import authors model -----------
         # Expect your repo in PYTHONPATH, eg run with `PYTHONPATH=.`
-        from slr_network import SLRModel
+        from slr_network_multi import SLRModel
 
         # unpack model args from cfg
         c2d_type = cfg.get("c2d_type", "slowfast101")

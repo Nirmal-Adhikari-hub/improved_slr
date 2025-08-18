@@ -29,11 +29,11 @@ model:
   slowfast_config: "SLOWFAST_64x2_R101_50_50.yaml"
   slowfast_args: []                         # you can pass cfg overrides here if needed
   conv_type: 2
-  use_bn: false
+  use_bn: 1
   hidden_size: 1024
   load_pkl: false
   weight_norm: true
-  share_classifier: true
+  share_classifier: false
 
   # used if inner.conv1d.kernel_size is unavailable
   kernel_spec: ["K5","P2","K5","P2"]
@@ -61,3 +61,15 @@ trainer:
   amp: true
   ema: false
   ema_decay: 0.999
+
+logging:
+  tensorboard: true
+  use_wandb: true
+  sync_tb: true
+  wandb_project: "cslr-slowfast"
+  wandb_tags: ["phoenix2014", "slowfast", "step1"]
+  wandb_watch_gradients: false # gradients can be heavy
+  wandb_watch_freq: 200
+  wandb_log_artifacts: true # upload last.pth each epoch
+  # control when to upload model artifact to W&B
+  wandb_artifact_policy: "end" # one of "none" | "every_epoch" | "end"
