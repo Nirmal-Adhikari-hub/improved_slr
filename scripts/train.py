@@ -1,14 +1,16 @@
 from __future__ import annotations
-import argparse, torch, time
+import torch, time
 from torch import nn
-from torch.utils.data import DataLoader
 from pathlib import Path
 from box.box import Box
+import wandb
+import os, datetime
 
-from cslr.utils.config import load_config, update_config
+from torch.utils.tensorboard import SummaryWriter
+
+from cslr.utils.config import load_config
 from cslr.utils.logger import setup_logger
 from cslr.utils.scheduler import create_scheduler
-from cslr.data_loader.phoenix_feeder import PhoenixFeeder, make_collate_fn
 from cslr.utils.parse_args import parse_args
 from cslr.models.build_model import build_model
 from cslr.data_loader.build_dataloader import build_loaders
@@ -21,6 +23,15 @@ def main():
     args = parse_args()
     raw = apply_overrides(load_config(args.config), args.override)
     cfg = Box(raw)
+
+    # W&B init
+    run_name = f"{cfg.model.name}-"+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    wandb.init(
+        project="cslr-slowfast",
+        name=run_name,
+        config=dict(cfg),
+        tags=[cfg.data.dataset, "phoenix2014", "slowfast", "step1"],
+    )
     
     save_dir = Path(cfg.trainer.save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -32,9 +43,12 @@ def main():
 
     # build model
     model = build_model(cfg)
-    with open(save_dir / "model.txt", "w") as f:
-        f.write(str(model))
+    # (optional) lgo gradients/params; can be heavy on big models -> set log_freq higher or skip
+    wandb.watch
+    # with open(save_dir / "model.txt", "w") as f:
+    #     f.write(str(model))
     log.info(f"Model built. kernel_spec from model: {model.kernel_spec}")
+    wandb.watch(model, log="gradients", log_freq=200)
 
     # build laoders with that kernel spec
     train_loader, dev_loader = build_loaders(cfg, kernel_spec=model.kernel_spec)
@@ -117,6 +131,17 @@ def main():
                 lr = optim.param_groups[0]["lr"]
                 log.info(f"[epoch {epoch} it {it}/{len(train_loader)}]"
                          f"loss {loss.item():.4f} | imgs/s {ips:.1f} | lr {lr:.6f}")
+
+                # wandb log
+                wandb.log(
+                    {
+                        "train/loss": float(loss.item()),
+                        "train/imgs_per_s": float(ips),
+                        "train/lr": float(lr),
+                        "epoch": epoch,
+                    },
+                    step=global_step,
+                )
             
         # FLUSH: if epoch ended mid_window; use remaining grads once
         if accum > 0:
@@ -128,6 +153,7 @@ def main():
                 
         avg = epoch_loss / max(1, seen)
         log.info(f"[EPOCH {epoch}] train_avg_loss={avg:.4f} seen {seen}/{len(train_loader.dataset)}")
+        wandb.log({"train/epoch_avg_loss": float(avg), "epoch": epoch}, step=global_step)
 
         # save the model checkpoint each epoch
         ckpt = {
@@ -138,10 +164,19 @@ def main():
             ),
             "optimizer_state_dict": optim.state_dict(),
         }
-        torch.save(ckpt, str(save_dir / "last.pth"))
+
+        ckpt_path = save_dir / "last.pth"
+        torch.save(ckpt, str(ckpt_path))
         log.info("saved checkpoint: last.pt")
+        try:
+            art = wandb.Artifact("slr_last", type="model")
+            art.add_file(str(ckpt_path))
+            wandb.log_artifact(art)
+        except Exception as e:
+            log.warning(F"W&B artifact upload failed: {e}")
     
     log.info("Training complete. Final model saved to 'last.pth'.")
+    wandb.finish()
 
 
 if __name__ == "__main__":
