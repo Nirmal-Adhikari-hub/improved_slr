@@ -33,7 +33,7 @@ model:
   hidden_size: 1024
   load_pkl: false
   weight_norm: true
-  share_classifier: false
+  share_classifier: 1
 
   # used if inner.conv1d.kernel_size is unavailable
   kernel_spec: ["K5","P2","K5","P2"]
