@@ -31,7 +31,7 @@ model:
   conv_type: 2
   use_bn: 1
   hidden_size: 1024
-  load_pkl: false
+  load_pkl: true
   weight_norm: true
   share_classifier: 1
 
@@ -41,8 +41,10 @@ model:
   # authors’ loss selections/weights
   loss_weights:
     SeqCTC: 1.0
-    # ConvCTC: 0.0
-    # Dist: 0.0
+    # VAC
+    ConvCTC: 1.0
+    Dist: 25.0
+  #load_weights: ''
 
 optimiser:
   name: "adamw"
@@ -62,6 +64,12 @@ trainer:
   ema: false
   ema_decay: 0.999
 
+  resume: true
+  ema: true
+  ema_decay: 0.999
+  save_best_by: "dev_wer_ema" # "dev_wer_ema" | "dev_wer" (primary metric)
+  log_interval: 50
+
 logging:
   tensorboard: true
   use_wandb: true
@@ -73,3 +81,15 @@ logging:
   wandb_log_artifacts: true # upload last.pth each epoch
   # control when to upload model artifact to W&B
   wandb_artifact_policy: "end" # one of "none" | "every_epoch" | "end"
+
+eval:
+  decode: "beam" # "beam" | "greedy" ("greedy" not supported yet)
+  beam_width: 10 # as in the original slowfast repo
+  run_test_mid_epoch: true # mid-epoch test eval
+  log_examples: 0 # how many (ref vs hyp) pairs to print; 0 disables
+
+sanity_checks:
+  enabled: true
+  set: "test" # dataset to pass through model's forward pass. "train" | "dev" 
+  index: 62 # index of the sample
+  author_ckpt_path: "/shared/home/xvoice/nirmal/gradcam/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
