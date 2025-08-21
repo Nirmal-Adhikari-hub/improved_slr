@@ -100,7 +100,7 @@ sanity_checks:
   enabled: true
   set: "train" # dataset to pass through model's forward pass. "train" | "dev" 
   index: 2275 # index of the sample
-  # author_ckpt_path: "/shared/home/xvoice/nirmal/gradcam/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
-  author_ckpt_path: "/home/nirmal/SlowFast/GradCAMs/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
+  author_ckpt_path: "/shared/home/xvoice/nirmal/gradcam/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
+  # author_ckpt_path: "/home/nirmal/SlowFast/GradCAMs/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
 
 
