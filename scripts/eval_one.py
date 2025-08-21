@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 import torch
 from box.box import Box
+from collections import OrderedDict
 
 from cslr.utils.config import load_config
 from cslr.utils.cli import apply_overrides
@@ -25,6 +26,28 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = build_model(cfg).to(device).eval()
+
+    if cfg.sanity_checks.enabled:
+        ckpt_path = Path(cfg.sanity_checks.author_ckpt_path)
+        if ckpt_path.exists():
+            print(f"Loading the checkpoint from: {ckpt_path}")
+            state_dict = torch.load(ckpt_path, map_location="cpu")
+            state_dict = state_dict['model_state_dict']
+            new_state_dict = OrderedDict()
+
+            for k, v in state_dict.items():
+                # Handle cases where the original checkpoint might have a 'module.' prefix
+                # from DataParallel, which we should remove first.
+                if k.startswith('module.'):
+                    k = k[len('module.'):]
+                name = 'inner.' + k  # Add the 'inner.' prefix
+                new_state_dict[name] = v
+            
+            model.load_state_dict(new_state_dict)
+            print("✅ Checkpoint loaded successfully!")
+        else:
+            raise FileNotFoundError(f"Checkpoint not found at {ckpt_path}")
+        
     train_loader, dev_loader, test_loader = build_loaders(cfg, kernel_spec=model.kernel_spec)
     loader = {"trainer": train_loader, "dev": dev_loader, "test": test_loader}[args.mode]
 

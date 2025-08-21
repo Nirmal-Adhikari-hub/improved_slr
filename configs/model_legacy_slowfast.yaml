@@ -35,7 +35,7 @@ model:
   conv_type: 2
   use_bn: 1
   hidden_size: 1024
-  load_pkl: true
+  load_pkl: false # [IMPORTANT -  make this true in real training]
   weight_norm: true
   share_classifier: 1
 
