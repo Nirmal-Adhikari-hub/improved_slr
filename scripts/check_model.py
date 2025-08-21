@@ -5,6 +5,7 @@ from torch import nn
 from torch.optim.lr_scheduler import OneCycleLR
 from box.box import Box
 from torch.utils.data import DataLoader, Subset
+from collections import OrderedDict
 
 from cslr.utils.config import load_config
 from cslr.utils.parse_args import parse_args
@@ -28,28 +29,47 @@ def main():
 
     save_dir = Path(cfg.trainer.save_dir); save_dir.mkdir(parents=True, exist_ok=True)
 
+    device = torch.device("cpu")
+
     model = build_model(cfg).to(device)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    ckpt_path = cfg.sanity_checks.author_ckpt_path
-    if Path(ckpt_path).exists():
+    ckpt_path = Path(cfg.sanity_checks.author_ckpt_path)
+    if ckpt_path.exists():
         print(f"Loading the checkpoint from: {ckpt_path}")
         state_dict = torch.load(ckpt_path, map_location="cpu")
-        if isinstance(model, nn.DataParallel) or 'module.' in list(state_dict.keys())[0]:
-            state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
-        model.load_state_dict(state_dict)
+        state_dict = state_dict['model_state_dict']
+        new_state_dict = OrderedDict()
+
+        for k, v in state_dict.items():
+            # Handle cases where the original checkpoint might have a 'module.' prefix
+            # from DataParallel, which we should remove first.
+            if k.startswith('module.'):
+                k = k[len('module.'):]
+            name = 'inner.' + k  # Add the 'inner.' prefix
+            new_state_dict[name] = v
+        
+        model.load_state_dict(new_state_dict)
+        print("✅ Checkpoint loaded successfully!")
     else:
         raise FileNotFoundError(f"Checkpoint not found at {ckpt_path}")
+    
+    print(f"Loading data ...")
+    train_loader, val_loader, test_loader = build_loaders(cfg, kernel_spec=model.kernel_spec)
+    
+    if cfg.sanity_checks.set == "test": loader = test_loader
+    elif cfg.sanity_checks.set == "dev": loader = val_loader
+    else: loader = train_loader
 
-    _, _, test_loader = build_loaders(cfg, kernel_spec=model.kernel_spec)
     video_index_to_eval = int(cfg.sanity_checks.index)
 
-    single_item_dataset = Subset(test_loader.dataset, [video_index_to_eval])
+    print(  loader.dataset[video_index_to_eval][-1])
+
+    single_item_dataset = Subset(loader.dataset, [video_index_to_eval])
     single_item_loader = DataLoader(
         single_item_dataset,
         batch_size=1,
         shuffle=False,
-        collate_fn=test_loader.collate_fn
+        collate_fn=loader.collate_fn
     )
 
     print(f"Evaluating sample at index {video_index_to_eval} from the test set...")

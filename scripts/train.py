@@ -19,6 +19,7 @@ from cslr.models.build_model import build_model
 from cslr.data_loader.build_dataloader import build_loaders
 from cslr.engine.trainers import train_one_epoch
 from cslr.engine.evaluate import evaluate_epoch
+from cslr.engine.authors_eval import evaluate_split_authors
 
 
 def main():
@@ -40,6 +41,10 @@ def main():
 
     # data
     train_loader, dev_loader, test_loader = build_loaders(cfg, kernel_spec=model.kernel_spec)
+
+    # evaluation setups
+    use_auth = bool(cfg.eval.get("use_authors_eval", True))
+    work_dir = str(save_dir) if str(save_dir).endswith("/") else f"{save_dir}/"
 
     # optim/sched
     opt_cfg = cfg.get("optimiser", Box({}))
@@ -91,24 +96,32 @@ def main():
         if (sched is not None) and (not is_onecycle):
             sched.step()
 
-        # ---- mid-epoch test WER (optional) ----
-        if run_test_mid:
-            exp.log_info(f"[epoch {epoch}] mid-epoch test eval...")
-            m_mid = evaluate_epoch(model, test_loader, device, compute_loss=False, log_examples=0)
-            exp.log_scalars({"test/wer_mid": m_mid["wer"]}, step=global_step)
-            if ema is not None:
-                m_mid_ema = evaluate_epoch(ema.ema, test_loader, device, compute_loss=False, log_examples=0)
-                exp.log_scalars({"test/wer_mid_ema": m_mid_ema["wer"]}, step=global_step)
-
         # ---- dev eval (WER + loss) ----
         exp.log_info(f"[epoch {epoch}] dev eval...")
-        m_dev = evaluate_epoch(model, dev_loader, device, compute_loss=True,  log_examples=log_examples)
-        exp.log_scalars({"dev/wer": m_dev["wer"], "dev/loss": m_dev.get("loss", float("nan"))}, step=global_step)
+        m_dev = evaluate_split_authors(cfg, 
+                                       dev_loader, 
+                                       model, 
+                                       device, 
+                                       mode="dev",  
+                                       work_dir=work_dir, 
+                                       python_evaluate=True)
+                                       
+        exp.log_scalars({"dev/wer": m_dev["wer"]}, step=global_step)
 
         m_dev_ema = None
         if ema is not None:
-            m_dev_ema = evaluate_epoch(ema.ema, dev_loader, device, compute_loss=True, log_examples=0)
-            exp.log_scalars({"dev/wer_ema": m_dev_ema["wer"], "dev/loss_ema": m_dev_ema.get("loss", float("nan"))}, step=global_step)
+            exp.log_info(f"[epoch {epoch}] dev eval EMA ...")
+            m_dev_ema = evaluate_split_authors(
+                                        cfg, 
+                                        dev_loader, 
+                                        ema.ema, 
+                                        device, 
+                                        mode="dev", 
+                                        work_dir=work_dir, 
+                                        python_evaluate=True, 
+                                        tag=f"ema-e{epoch}")
+            
+            exp.log_scalars({"dev/wer_ema": m_dev_ema["wer"]}, step=global_step)
 
         csv_logger.log("dev", {
             "epoch": epoch,
@@ -118,14 +131,49 @@ def main():
             "dev_loss_ema": (m_dev_ema.get("loss", float("nan")) if m_dev_ema else float("nan")),
         })
 
-        # ---- test eval (WER + loss) ----
+        # ---- test eval (RAW test every epoch) ----
         exp.log_info(f"[epoch {epoch}] test eval...")
-        m_test = evaluate_epoch(model, test_loader, device, compute_loss=True, log_examples=0)
-        exp.log_scalars({"test/wer": m_test["wer"], "test/loss": m_test.get("loss", float("nan"))}, step=global_step)
-        m_test_ema = None
+        m_test = evaluate_split_authors(cfg, 
+                                        test_loader, 
+                                        model, 
+                                        device, 
+                                        mode="test",
+                                        work_dir=work_dir,
+                                        python_evaluate=True)
+        
+        exp.log_scalars({"test/wer": m_test["wer"]},step=global_step)
+
+        # EMA test only at the very end (after last epoch)
+        is_last = (epoch == epochs)
+        if is_last and ema is not None:
+            exp.log_info(f"[epoch {epoch}] FINAL test eval (EMA)...")
+            m_test_ema = evaluate_split_authors(cfg, 
+                                                test_loader, 
+                                                ema.ema, 
+                                                device, 
+                                                mode="test", 
+                                                work_dir=work_dir, 
+                                                python_evaluate=True, 
+                                                tag="ema-final")
+            exp.log_scalars({"test/wer_ema": m_test_ema["wer"]}, step=global_step)
+
+        # --------- checkpointing (RAW+EMA) ------------
+        _save_checkpoint(save_dir, 
+                         epoch,
+                         model,
+                         optim,
+                         sched,
+                         ema,
+                         best_dev_wer,
+                         best_dev_wer_ema)
+        exp.log_info("saved checkpoint: last.pth")
         if ema is not None:
-            m_test_ema = evaluate_epoch(ema.ema, test_loader, device, compute_loss=True, log_examples=0)
-            exp.log_scalars({"test/wer_ema": m_test_ema["wer"], "test/loss_ema": m_test_ema.get("loss", float("nan"))}, step=global_step)
+            torch.save(ema.state_dict(), str(save_dir / "last_ema.pth"))
+
+
+
+
+
 
         csv_logger.log("test", {
             "epoch": epoch,

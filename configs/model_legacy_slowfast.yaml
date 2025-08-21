@@ -1,9 +1,13 @@
 seed: 42
 
+dataset_info:
+  evaluation_dir: "./cslr/models/slowfast/evaluation/slr_eval"
+  evaluation_prefix: "phoenix2014-groundtruth" 
+
 data:
   dataset: "phoenix2014"
-  # dataset_root: "/nas/Dataset/Phoenix/phoenix2014-release/phoenix-2014-multisigner"
-  dataset_root: "/shared/home/xvoice/nirmal/SlowFastSign/dataset/phoenix2014/phoenix-2014-multisigner"
+  dataset_root: "/nas/Dataset/Phoenix/phoenix2014-release/phoenix-2014-multisigner"
+  # dataset_root: "/shared/home/xvoice/nirmal/SlowFastSign/dataset/phoenix2014/phoenix-2014-multisigner"
   frame_subdir: "features/fullFrame-256x256px"
   preprocess_root: "./preprocess"
   gloss_dict_path: "./preprocess/phoenix2014/gloss_dict.npy"
@@ -67,7 +71,7 @@ trainer:
   resume: true
   ema: true
   ema_decay: 0.999
-  save_best_by: "dev_wer_ema" # "dev_wer_ema" | "dev_wer" (primary metric)
+  save_best_by: "dev_wer" # "dev_wer_ema" | "dev_wer" (primary metric)
   log_interval: 50
 
 logging:
@@ -88,8 +92,15 @@ eval:
   run_test_mid_epoch: true # mid-epoch test eval
   log_examples: 0 # how many (ref vs hyp) pairs to print; 0 disables
 
+
+#### Feeder Indices [0,1,2,62,414] -> Test
+#### Feeder Indices [0,68,5670,2275] -> Train
+#### Feeder Indices [0,21,539,107] -> Dev
 sanity_checks:
   enabled: true
-  set: "test" # dataset to pass through model's forward pass. "train" | "dev" 
-  index: 62 # index of the sample
-  author_ckpt_path: "/shared/home/xvoice/nirmal/gradcam/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
+  set: "train" # dataset to pass through model's forward pass. "train" | "dev" 
+  index: 2275 # index of the sample
+  # author_ckpt_path: "/shared/home/xvoice/nirmal/gradcam/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
+  author_ckpt_path: "/home/nirmal/SlowFast/GradCAMs/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
+
+
