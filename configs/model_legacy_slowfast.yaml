@@ -6,8 +6,8 @@ dataset_info:
 
 data:
   dataset: "phoenix2014"
-  dataset_root: "/nas/Dataset/Phoenix/phoenix2014-release/phoenix-2014-multisigner"
-  # dataset_root: "/shared/home/xvoice/nirmal/SlowFastSign/dataset/phoenix2014/phoenix-2014-multisigner"
+  # dataset_root: "/nas/Dataset/Phoenix/phoenix2014-release/phoenix-2014-multisigner"
+  dataset_root: "/shared/home/xvoice/nirmal/SlowFastSign/dataset/phoenix2014/phoenix-2014-multisigner"
   frame_subdir: "features/fullFrame-256x256px"
   preprocess_root: "./preprocess"
   gloss_dict_path: "./preprocess/phoenix2014/gloss_dict.npy"
