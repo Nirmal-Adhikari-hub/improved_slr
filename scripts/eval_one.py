@@ -49,7 +49,7 @@ def main():
             raise FileNotFoundError(f"Checkpoint not found at {ckpt_path}")
         
     train_loader, dev_loader, test_loader = build_loaders(cfg, kernel_spec=model.kernel_spec)
-    loader = {"trainer": train_loader, "dev": dev_loader, "test": test_loader}[args.mode]
+    loader = {"train": train_loader, "dev": dev_loader, "test": test_loader}[args.mode]
 
     save_dir = Path(cfg.trainer.save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
