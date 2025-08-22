@@ -43,7 +43,7 @@ def train_one_epoch(
             loss = model.compute_loss(out, labels, lab_lens)
             if loss.dim() > 0: loss = loss.mean()
 
-        loss_scaled = loss.div_(max(1, grad_accum))
+        loss_scaled = loss.div(max(1, grad_accum))
         (scaler.scale(loss_scaled) if amp_enabled else loss_scaled).backward()
         accum += 1
 
