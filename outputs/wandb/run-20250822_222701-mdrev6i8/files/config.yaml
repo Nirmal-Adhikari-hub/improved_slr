@@ -1,0 +1,155 @@
+_wandb:
+    value:
+        cli_version: 0.21.1
+        e:
+            0r9g1seh89qf5t8co5bmcycs9mrurdi2:
+                args:
+                    - --config
+                    - configs/model_legacy_slowfast.yaml
+                codePath: scripts/train.py
+                codePathLocal: scripts/train.py
+                cpu_count: 36
+                cpu_count_logical: 72
+                cudaVersion: "12.2"
+                disk:
+                    /:
+                        total: "3672068382720"
+                        used: "916251561984"
+                email: adhikareen@inha.edu
+                executable: /home/nirmal/miniconda3/envs/signL/bin/python
+                git:
+                    commit: 6179ef5a9092e49296cdd7fc9e5360a1f83b47f9
+                    remote: git@github.com:Nirmal-Adhikari-hub/improved_slr.git
+                gpu: NVIDIA A100 80GB PCIe
+                gpu_count: 2
+                gpu_nvidia:
+                    - architecture: Ampere
+                      cudaCores: 6912
+                      memoryTotal: "85899345920"
+                      name: NVIDIA A100 80GB PCIe
+                      uuid: GPU-9153f649-3067-2e87-349e-4131227d74a1
+                    - architecture: Ampere
+                      cudaCores: 6912
+                      memoryTotal: "85899345920"
+                      name: NVIDIA A100 80GB PCIe
+                      uuid: GPU-9fe6b695-007a-4315-a8ff-855c16dca19e
+                host: xvoice
+                memory:
+                    total: "269721997312"
+                os: Linux-6.8.0-65-generic-x86_64-with-glibc2.17
+                program: scripts/train.py
+                python: CPython 3.8.20
+                root: outputs
+                startedAt: "2025-08-22T13:27:01.393197Z"
+                writerId: 0r9g1seh89qf5t8co5bmcycs9mrurdi2
+        m: []
+        python_version: 3.8.20
+        t:
+            "1":
+                - 1
+            "2":
+                - 1
+                - 41
+            "3":
+                - 13
+                - 15
+                - 16
+                - 35
+            "4": 3.8.20
+            "5": 0.21.1
+            "12": 0.21.1
+            "13": linux-x86_64
+data:
+    value:
+        batch_size: 4
+        dataset: phoenix2014
+        dataset_root: /shared/home/xvoice/nirmal/SlowFastSign/dataset/phoenix2014/phoenix-2014-multisigner
+        datatype: video
+        frame_interval: 1
+        frame_subdir: features/fullFrame-256x256px
+        gloss_dict_path: ./preprocess/phoenix2014/gloss_dict.npy
+        image_scale: 1
+        input_size: 224
+        kernel_spec:
+            - K5
+            - P2
+            - K5
+            - P2
+        num_workers: 4
+        preprocess_root: ./preprocess
+dataset_info:
+    value:
+        evaluation_dir: ./cslr/models/slowfast/evaluation/slr_eval
+        evaluation_prefix: phoenix2014-groundtruth
+eval:
+    value:
+        beam_width: 10
+        decode: beam
+        log_examples: 0
+logging:
+    value:
+        sync_tb: true
+        tensorboard: true
+        use_wandb: true
+        wandb_artifact_policy: end
+        wandb_project: cslr-slowfast
+        wandb_tags:
+            - phoenix2014
+            - slowfast
+            - step1
+        wandb_watch_freq: 200
+        wandb_watch_gradients: false
+model:
+    value:
+        blank_id: 0
+        c2d_type: slowfast101
+        conv_type: 2
+        hidden_size: 1024
+        kernel_spec:
+            - K5
+            - P2
+            - K5
+            - P2
+        load_pkl: true
+        loss_weights:
+            ConvCTC: 1
+            Dist: 25
+            Fast: 0.25
+            SeqCTC: 1
+            Slow: 0.25
+        name: legacy_slowfast
+        num_classes: 1296
+        share_classifier: 1
+        slowfast_args: []
+        slowfast_config: SLOWFAST_64x2_R101_50_50.yaml
+        use_bn: 1
+        weight_norm: true
+optimiser:
+    value:
+        lr: 0.0001
+        name: adamw
+        weight_decay: 0.01
+sanity_checks:
+    value:
+        author_ckpt_path: /home/nirmal/SlowFast/GradCAMs/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt
+        enabled: true
+        index: 2275
+        set: train
+scheduler:
+    value:
+        eta_min: 1e-06
+        name: cosine
+        t_max: 50
+seed:
+    value: 42
+trainer:
+    value:
+        amp: false
+        ema: true
+        ema_decay: 0.999
+        epochs: 1
+        grad_accum_steps: 1
+        log_interval: 50
+        resume: true
+        save_best_by: dev_wer
+        save_dir: outputs

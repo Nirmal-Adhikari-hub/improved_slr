@@ -1,0 +1,29 @@
+Use Bidirectional Add Fusion
+res3_0_branch1_w: (512, 320, 1, 1, 1) => s3.pathway0_res0.branch1.weight: (512, 256, 1, 1, 1)
+Traceback (most recent call last):
+  File "scripts/train.py", line 210, in <module>
+    main()
+  File "scripts/train.py", line 53, in main
+    model = build_model(cfg).to(device)
+  File "/home/nirmal/SlowFast/improved_slr/cslr/models/build_model.py", line 6, in build_model
+    model = LegacySlowFastSLR(
+  File "/home/nirmal/SlowFast/improved_slr/cslr/models/slowfast/legacy_slowfast_adapter.py", line 40, in __init__
+    self.inner = SLRModel(
+  File "/home/nirmal/SlowFast/improved_slr/cslr/models/slowfast/slr_network_multi.py", line 47, in __init__
+    self.conv2d = getattr(slowfast, c2d_type)(slowfast_config=slowfast_config,  slowfast_args=slowfast_args,
+  File "/home/nirmal/SlowFast/improved_slr/cslr/models/slowfast/slowfast_modules/slowfast.py", line 320, in slowfast101
+    load_checkpoint('cslr/models/slowfast/pretrained_ckpt/SLOWFAST_64x2_R101_50_50.pkl', model)
+  File "/home/nirmal/SlowFast/improved_slr/cslr/models/slowfast/slowfast_modules/checkpoint.py", line 186, in load_checkpoint
+    if converted_key in ms.state_dict():
+  File "/home/nirmal/miniconda3/envs/signL/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1381, in state_dict
+    module.state_dict(destination=destination, prefix=prefix + name + '.', keep_vars=keep_vars)
+  File "/home/nirmal/miniconda3/envs/signL/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1381, in state_dict
+    module.state_dict(destination=destination, prefix=prefix + name + '.', keep_vars=keep_vars)
+  File "/home/nirmal/miniconda3/envs/signL/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1381, in state_dict
+    module.state_dict(destination=destination, prefix=prefix + name + '.', keep_vars=keep_vars)
+  [Previous line repeated 1 more time]
+  File "/home/nirmal/miniconda3/envs/signL/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1378, in state_dict
+    self._save_to_state_dict(destination, prefix, keep_vars)
+  File "/home/nirmal/miniconda3/envs/signL/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1295, in _save_to_state_dict
+    for name, buf in self._buffers.items():
+KeyboardInterrupt
