@@ -11,3 +11,4 @@
 *.pkl.xz
 *.pkl.lz4
 *.pkl.zstd
+/outputs
