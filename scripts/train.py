@@ -36,13 +36,16 @@ def main():
     args = parse_args()
     cfg = Box(apply_overrides(load_config(args.config), args.override))
 
+    print(cfg)
+
     set_seeds(int(cfg.get("seed", 42)))
-    
+
     save_dir = Path(cfg.trainer.save_dir); save_dir.mkdir(parents=True, exist_ok=True)
     exp = ExperimentLogger(cfg, save_dir=str(save_dir), name="train_min")
     csv_logger = ScalarFileLogger(base_dir=str(save_dir / "metrics"))
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     amp_enabled = bool(cfg.trainer.get("amp", True))
     scaler = torch.cuda.amp.GradScaler(enabled=amp_enabled)
 

@@ -1,0 +1,31 @@
+Use Bidirectional Add Fusion
+res3_0_branch1_w: (512, 320, 1, 1, 1) => s3.pathway0_res0.branch1.weight: (512, 256, 1, 1, 1)
+res5_0_branch2a_w: (512, 1280, 3, 1, 1) => s5.pathway0_res0.branch2.a.weight: (512, 1024, 3, 1, 1)
+res4_0_branch2a_w: (256, 640, 3, 1, 1) => s4.pathway0_res0.branch2.a.weight: (256, 512, 3, 1, 1)
+res2_0_branch2a_w: (64, 80, 1, 1, 1) => s2.pathway0_res0.branch2.a.weight: (64, 64, 1, 1, 1)
+res3_0_branch2a_w: (128, 320, 1, 1, 1) => s3.pathway0_res0.branch2.a.weight: (128, 256, 1, 1, 1)
+res2_0_branch1_w: (256, 80, 1, 1, 1) => s2.pathway0_res0.branch1.weight: (256, 64, 1, 1, 1)
+res4_0_branch1_w: (1024, 640, 1, 1, 1) => s4.pathway0_res0.branch1.weight: (1024, 512, 1, 1, 1)
+!! pred_b: can not be converted, got head.projection.bias
+!! pred_w: can not be converted, got head.projection.weight
+res5_0_branch1_w: (2048, 1280, 1, 1, 1) => s5.pathway0_res0.branch1.weight: (2048, 1024, 1, 1, 1)
+Not loaded {'s1_fuse.bn2.bias', 's1_fuse.bn2.running_var', 's1_fuse.bn2.weight', 's2_fuse.weight_f', 's4_fuse.bn2.bias', 's2_fuse.bn2.running_var', 's1_fuse.weight_f', 's3_fuse.weight_s', 's2_fuse.conv_s2f.weight', 's4_fuse.conv_f2s.weight', 's2_fuse.bn2.bias', 's3_fuse.conv_s2f.weight', 's1_fuse.bn2.running_mean', 's2_fuse.bn2.weight', 's4_fuse.bn2.running_var', 's3_fuse.weight_f', 's4_fuse.weight_s', 's2_fuse.conv_f2s.weight', 's1_fuse.conv_s2f.weight', 's3_fuse.bn2.running_mean', 's4_fuse.bn2.running_mean', 's4_fuse.conv_s2f.weight', 's3_fuse.conv_f2s.weight', 's3_fuse.bn2.weight', 's4_fuse.weight_f', 's3_fuse.bn2.running_var', 's2_fuse.weight_s', 's4_fuse.bn2.weight', 's3_fuse.bn2.bias', 's1_fuse.weight_s', 's2_fuse.bn2.running_mean', 's1_fuse.conv_f2s.weight'}
+[SLOWFAST.py] Loaded checkpoint for SLOWFAST_64x2_R101_50_50.yaml
+[32m2025-08-22 22:01:42,313 | INFO | Model built. kernel_spec from model: ['K5', 'P2', 'K5', 'P2'][0m
+Applying training transformations
+[PhoenixFeeder] train: 5671 samples | interval=1 | scale=1.0 | input=224
+Applying test transformations
+[PhoenixFeeder] dev: 540 samples | interval=1 | scale=1.0 | input=224
+Applying test transformations
+[PhoenixFeeder] test: 629 samples | interval=1 | scale=1.0 | input=224
+[32m2025-08-22 22:01:42,453 | INFO | No checkpoint found. Starting from scratch.[0m
+Traceback (most recent call last):
+  File "scripts/train.py", line 208, in <module>
+    main()
+  File "scripts/train.py", line 102, in main
+    tr = train_one_epoch(
+  File "/home/nirmal/SlowFast/improved_slr/cslr/engine/trainers.py", line 47, in train_one_epoch
+    (scaler.scale(loss_scaled) if amp_enabled else loss_scaled).backward()
+  File "/home/nirmal/miniconda3/envs/signL/lib/python3.8/site-packages/torch/cuda/amp/grad_scaler.py", line 161, in scale
+    assert outputs.is_cuda or outputs.device.type == 'xla'
+AssertionError

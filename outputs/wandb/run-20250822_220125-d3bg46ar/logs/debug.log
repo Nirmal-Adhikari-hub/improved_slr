@@ -1,0 +1,22 @@
+2025-08-22 22:01:25,363 INFO    MainThread:3008700 [wandb_setup.py:_flush():80] Current SDK version is 0.21.1
+2025-08-22 22:01:25,363 INFO    MainThread:3008700 [wandb_setup.py:_flush():80] Configure stats pid to 3008700
+2025-08-22 22:01:25,363 INFO    MainThread:3008700 [wandb_setup.py:_flush():80] Loading settings from /home/nirmal/.config/wandb/settings
+2025-08-22 22:01:25,363 INFO    MainThread:3008700 [wandb_setup.py:_flush():80] Loading settings from /home/nirmal/SlowFast/improved_slr/wandb/settings
+2025-08-22 22:01:25,363 INFO    MainThread:3008700 [wandb_setup.py:_flush():80] Loading settings from environment variables
+2025-08-22 22:01:25,363 INFO    MainThread:3008700 [wandb_init.py:setup_run_log_directory():703] Logging user logs to outputs/wandb/run-20250822_220125-d3bg46ar/logs/debug.log
+2025-08-22 22:01:25,363 INFO    MainThread:3008700 [wandb_init.py:setup_run_log_directory():704] Logging internal logs to outputs/wandb/run-20250822_220125-d3bg46ar/logs/debug-internal.log
+2025-08-22 22:01:25,364 INFO    MainThread:3008700 [wandb_init.py:init():830] calling init triggers
+2025-08-22 22:01:25,364 INFO    MainThread:3008700 [wandb_init.py:init():835] wandb.init called with sweep_config: {}
+config: {'seed': 42, 'dataset_info': Box({'evaluation_dir': './cslr/models/slowfast/evaluation/slr_eval', 'evaluation_prefix': 'phoenix2014-groundtruth'}), 'data': Box({'dataset': 'phoenix2014', 'dataset_root': '/nas/Dataset/Phoenix/phoenix2014-release/phoenix-2014-multisigner', 'frame_subdir': 'features/fullFrame-256x256px', 'preprocess_root': './preprocess', 'gloss_dict_path': './preprocess/phoenix2014/gloss_dict.npy', 'datatype': 'video', 'frame_interval': 1, 'image_scale': 1.0, 'input_size': 224, 'kernel_spec': ['K5', 'P2', 'K5', 'P2'], 'batch_size': 4, 'num_workers': 4}), 'model': Box({'name': 'legacy_slowfast', 'num_classes': 1296, 'blank_id': 0, 'c2d_type': 'slowfast101', 'slowfast_config': 'SLOWFAST_64x2_R101_50_50.yaml', 'slowfast_args': [], 'conv_type': 2, 'use_bn': 1, 'hidden_size': 1024, 'load_pkl': True, 'weight_norm': True, 'share_classifier': 1, 'kernel_spec': ['K5', 'P2', 'K5', 'P2'], 'loss_weights': {'SeqCTC': 1.0, 'ConvCTC': 1.0, 'Dist': 25.0, 'Slow': 0.25, 'Fast': 0.25}}), 'optimiser': Box({'name': 'adamw', 'lr': 0.0001, 'weight_decay': 0.01}), 'scheduler': Box({'name': 'cosine', 't_max': 50, 'eta_min': 1e-06}), 'trainer': Box({'epochs': 1, 'save_dir': 'outputs', 'grad_accum_steps': 1, 'amp': True, 'resume': True, 'ema': True, 'ema_decay': 0.999, 'save_best_by': 'dev_wer', 'log_interval': 50}), 'logging': Box({'tensorboard': True, 'use_wandb': True, 'sync_tb': True, 'wandb_project': 'cslr-slowfast', 'wandb_tags': ['phoenix2014', 'slowfast', 'step1'], 'wandb_watch_gradients': False, 'wandb_watch_freq': 200, 'wandb_artifact_policy': 'end'}), 'eval': Box({'decode': 'beam', 'beam_width': 10, 'log_examples': 0}), 'sanity_checks': Box({'enabled': True, 'set': 'train', 'index': 2275, 'author_ckpt_path': '/home/nirmal/SlowFast/GradCAMs/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt'}), '_wandb': {}}
+2025-08-22 22:01:25,364 INFO    MainThread:3008700 [wandb_init.py:init():871] starting backend
+2025-08-22 22:01:25,580 INFO    MainThread:3008700 [wandb_init.py:init():874] sending inform_init request
+2025-08-22 22:01:25,601 INFO    MainThread:3008700 [wandb_init.py:init():882] backend started and connected
+2025-08-22 22:01:25,602 INFO    MainThread:3008700 [wandb_init.py:init():953] updated telemetry
+2025-08-22 22:01:25,617 INFO    MainThread:3008700 [wandb_init.py:init():977] communicating run to backend with 90.0 second timeout
+2025-08-22 22:01:26,195 INFO    MainThread:3008700 [wandb_init.py:init():1029] starting run threads in backend
+2025-08-22 22:01:26,247 INFO    MainThread:3008700 [wandb_run.py:_console_start():2494] atexit reg
+2025-08-22 22:01:26,247 INFO    MainThread:3008700 [wandb_run.py:_redirect():2342] redirect: wrap_raw
+2025-08-22 22:01:26,247 INFO    MainThread:3008700 [wandb_run.py:_redirect():2411] Wrapping output streams.
+2025-08-22 22:01:26,247 INFO    MainThread:3008700 [wandb_run.py:_redirect():2434] Redirects installed.
+2025-08-22 22:01:26,249 INFO    MainThread:3008700 [wandb_init.py:init():1075] run started, returning control to user process
+2025-08-22 22:02:15,501 INFO    MsgRouterThr:3008700 [mailbox.py:close():129] [no run ID] Closing mailbox, abandoning 1 handles.

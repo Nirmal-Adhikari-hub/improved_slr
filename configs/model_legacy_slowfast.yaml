@@ -35,8 +35,7 @@ model:
   conv_type: 2
   use_bn: 1
   hidden_size: 1024
-  load_pkl: false # [IMPORTANT -  make this true in real training]
-  load_pkl_path: "/shared/home/xvoice/nirmal/gradcam/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
+  load_pkl: true # [IMPORTANT -  make this true in real training]
   weight_norm: true
   share_classifier: 1
 
@@ -67,7 +66,7 @@ trainer:
   epochs: 1
   save_dir: "outputs"
   grad_accum_steps: 1
-  amp: true
+  amp: false
 
   resume: true
   ema: true
