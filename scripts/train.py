@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
+import os, random, numpy as np
 import torch
 from torch import nn
 from torch.optim.lr_scheduler import OneCycleLR
@@ -18,14 +19,25 @@ from cslr.utils.checkpointing import CKPT_BEST, CKPT_BEST_EMA, CKPT_LAST
 from cslr.models.build_model import build_model
 from cslr.data_loader.build_dataloader import build_loaders
 from cslr.engine.trainers import train_one_epoch
-from cslr.engine.evaluate import evaluate_epoch
 from cslr.engine.authors_eval import evaluate_split_authors
+
+
+def set_seeds(seed: int):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    # Fast + reasonably stable
+    torch.backends.cudnn.deterministic = False
+    torch.backends.cudnn.benchmark = True
 
 
 def main():
     args = parse_args()
     cfg = Box(apply_overrides(load_config(args.config), args.override))
 
+    set_seeds(int(cfg.get("seed", 42)))
+    
     save_dir = Path(cfg.trainer.save_dir); save_dir.mkdir(parents=True, exist_ok=True)
     exp = ExperimentLogger(cfg, save_dir=str(save_dir), name="train_min")
     csv_logger = ScalarFileLogger(base_dir=str(save_dir / "metrics"))
@@ -42,21 +54,23 @@ def main():
     # data
     train_loader, dev_loader, test_loader = build_loaders(cfg, kernel_spec=model.kernel_spec)
 
-    # evaluation setups
-    use_auth = bool(cfg.eval.get("use_authors_eval", True))
     work_dir = str(save_dir) if str(save_dir).endswith("/") else f"{save_dir}/"
 
     # optim/sched
     opt_cfg = cfg.get("optimiser", Box({}))
     if opt_cfg.get("name", "adamw").lower() == "adamw":
-        optim = torch.optim.AdamW(model.parameters(),
-                                  lr=opt_cfg.get("lr", 1e-4),
-                                  weight_decay=opt_cfg.get("weight_decay", 1e-2))
+        optim = torch.optim.AdamW(
+            model.parameters(),
+            lr=opt_cfg.get("lr", 1e-4),
+            weight_decay=opt_cfg.get("weight_decay", 1e-2),
+        )
     else:
-        optim = torch.optim.SGD(model.parameters(),
-                                lr=opt_cfg.get("lr", 1e-3),
-                                momentum=opt_cfg.get("momentum", 0.9),
-                                weight_decay=opt_cfg.get("weight_decay", 1e-4))
+        optim = torch.optim.SGD(
+            model.parameters(),
+            lr=opt_cfg.get("lr", 1e-3),
+            momentum=opt_cfg.get("momentum", 0.9),
+            weight_decay=opt_cfg.get("weight_decay", 1e-4),
+        )
     sched = create_scheduler(optim, cfg.get("scheduler", {"name": "none"}))
     is_onecycle = isinstance(sched, OneCycleLR)
 
@@ -68,18 +82,21 @@ def main():
     best_dev_wer = float("inf")
     best_dev_wer_ema = float("inf")
     if bool(cfg.trainer.get("resume", True)):
-        start_epoch, best_dev_wer, best_dev_wer_ema = _load_checkpoint_if_any(model, optim, sched, ema, save_dir, exp)
+        start_epoch, best_dev_wer, best_dev_wer_ema = _load_checkpoint_if_any(
+            model, optim, sched, ema, save_dir, exp
+        )
 
     # train loop
     epochs     = int(cfg.trainer.get("epochs", 1))
     grad_accum = int(cfg.trainer.get("grad_accum_steps", 1))
     log_every  = int(cfg.trainer.get("log_interval", 50))
-    run_test_mid = bool(cfg.eval.get("run_test_mid_epoch", True))
-    log_examples = int(cfg.eval.get("log_examples", 0))
-    best_key = str(cfg.trainer.get("save_best_by", "dev_wer_ema"))
+    best_key   = str(cfg.trainer.get("save_best_by", "dev_wer_ema"))
 
     global_step = 0
     for epoch in range(start_epoch + 1, epochs + 1):
+        # Ensure defined even if EMA test doesn't run this epoch
+        m_test_ema = None
+
         # ---- train ----
         tr = train_one_epoch(
             model=model, loader=train_loader, device=device,
@@ -98,30 +115,24 @@ def main():
 
         # ---- dev eval (WER + loss) ----
         exp.log_info(f"[epoch {epoch}] dev eval...")
-        m_dev = evaluate_split_authors(cfg, 
-                                       dev_loader, 
-                                       model, 
-                                       device, 
-                                       mode="dev",  
-                                       work_dir=work_dir, 
-                                       python_evaluate=True)
-                                       
-        exp.log_scalars({"dev/wer": m_dev["wer"]}, step=global_step)
+        m_dev = evaluate_split_authors(
+            cfg, dev_loader, model, device,
+            mode="dev", work_dir=work_dir, python_evaluate=True
+        )
+        exp.log_scalars({"dev/wer": m_dev["wer"], "dev/loss": m_dev["loss"]}, step=global_step)
 
         m_dev_ema = None
         if ema is not None:
             exp.log_info(f"[epoch {epoch}] dev eval EMA ...")
             m_dev_ema = evaluate_split_authors(
-                                        cfg, 
-                                        dev_loader, 
-                                        ema.ema, 
-                                        device, 
-                                        mode="dev", 
-                                        work_dir=work_dir, 
-                                        python_evaluate=True, 
-                                        tag=f"ema-e{epoch}")
-            
-            exp.log_scalars({"dev/wer_ema": m_dev_ema["wer"]}, step=global_step)
+                cfg, dev_loader, ema.ema, device,
+                mode="dev", work_dir=work_dir, python_evaluate=True,
+                tag=f"ema-e{epoch}"
+            )
+            exp.log_scalars(
+                {"dev/wer_ema": m_dev_ema["wer"], "dev/loss_ema": m_dev_ema["loss"]},
+                step=global_step
+            )
 
         csv_logger.log("dev", {
             "epoch": epoch,
@@ -133,48 +144,26 @@ def main():
 
         # ---- test eval (RAW test every epoch) ----
         exp.log_info(f"[epoch {epoch}] test eval...")
-        m_test = evaluate_split_authors(cfg, 
-                                        test_loader, 
-                                        model, 
-                                        device, 
-                                        mode="test",
-                                        work_dir=work_dir,
-                                        python_evaluate=True)
-        
-        exp.log_scalars({"test/wer": m_test["wer"]},step=global_step)
+        m_test = evaluate_split_authors(
+            cfg, test_loader, model, device,
+            mode="test", work_dir=work_dir, python_evaluate=True
+        )
+        exp.log_scalars({"test/wer": m_test["wer"], "test/loss": m_test["loss"]}, step=global_step)
 
         # EMA test only at the very end (after last epoch)
         is_last = (epoch == epochs)
         if is_last and ema is not None:
             exp.log_info(f"[epoch {epoch}] FINAL test eval (EMA)...")
-            m_test_ema = evaluate_split_authors(cfg, 
-                                                test_loader, 
-                                                ema.ema, 
-                                                device, 
-                                                mode="test", 
-                                                work_dir=work_dir, 
-                                                python_evaluate=True, 
-                                                tag="ema-final")
-            exp.log_scalars({"test/wer_ema": m_test_ema["wer"]}, step=global_step)
+            m_test_ema = evaluate_split_authors(
+                cfg, test_loader, ema.ema, device,
+                mode="test", work_dir=work_dir, python_evaluate=True, tag="ema-final"
+            )
+            exp.log_scalars(
+                {"test/wer_ema": m_test_ema["wer"], "test/loss_ema": m_test_ema["loss"]},
+                step=global_step
+            )
 
-        # --------- checkpointing (RAW+EMA) ------------
-        _save_checkpoint(save_dir, 
-                         epoch,
-                         model,
-                         optim,
-                         sched,
-                         ema,
-                         best_dev_wer,
-                         best_dev_wer_ema)
-        exp.log_info("saved checkpoint: last.pth")
-        if ema is not None:
-            torch.save(ema.state_dict(), str(save_dir / "last_ema.pth"))
-
-
-
-
-
-
+        # ---- write TEST CSVs (works even if EMA wasn't run this epoch) ----
         csv_logger.log("test", {
             "epoch": epoch,
             "test_wer": m_test["wer"],
@@ -183,10 +172,7 @@ def main():
             "test_loss_ema": (m_test_ema.get("loss", float("nan")) if m_test_ema else float("nan")),
         })
 
-        # ---- checkpoints ----
-        _save_checkpoint(save_dir, epoch, model, optim, sched, ema, best_dev_wer, best_dev_wer_ema)
-        exp.log_info("saved checkpoint: last.pth")
-
+        # ---- BEST checkpointing (based on DEV WER), raw and EMA handled independently ----
         if best_key == "dev_wer_ema" and m_dev_ema is not None:
             current = m_dev_ema["wer"]
             if current < best_dev_wer_ema:
@@ -197,12 +183,25 @@ def main():
             current = m_dev["wer"]
             if current < best_dev_wer:
                 best_dev_wer = current
-                torch.save((model.module.state_dict() if isinstance(model, nn.DataParallel) else model.state_dict()),
-                           str(save_dir / CKPT_BEST))
+                torch.save(
+                    (model.module.state_dict() if isinstance(model, nn.DataParallel) else model.state_dict()),
+                    str(save_dir / CKPT_BEST)
+                )
                 exp.log_info(f"New BEST dev WER: {best_dev_wer:.3f}. Saved {CKPT_BEST}.")
+
+        # ---- LAST checkpoint(s) (once per epoch, after all updates/logs) ----
+        _save_checkpoint(
+            save_dir, epoch, model, optim, sched, ema,
+            best_dev_wer, best_dev_wer_ema
+        )
+        exp.log_info("saved checkpoint: last.pth")
+        if ema is not None:
+            # Save EMA weights separately for resume/analysis
+            torch.save(ema.state_dict(), str(save_dir / "last_ema.pth"))
 
     exp.log_info("Training complete.")
     exp.close()
+
 
 if __name__ == "__main__":
     main()

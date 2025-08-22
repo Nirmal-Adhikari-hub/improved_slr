@@ -63,6 +63,7 @@ def main():
     video_index_to_eval = int(cfg.sanity_checks.index)
 
     print(  loader.dataset[video_index_to_eval][-1])
+    print(f"[[[[[[[]]]]]]] { len(loader.dataset[video_index_to_eval])}")
 
     single_item_dataset = Subset(loader.dataset, [video_index_to_eval])
     single_item_loader = DataLoader(

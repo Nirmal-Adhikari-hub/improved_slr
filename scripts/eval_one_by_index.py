@@ -1,7 +1,7 @@
+# scripts/eval_one_by_index.py
 from __future__ import annotations
-import argparse
+import argparse, torch
 from pathlib import Path
-import torch
 from box.box import Box
 from collections import OrderedDict
 
@@ -9,22 +9,22 @@ from cslr.utils.config import load_config
 from cslr.utils.cli import apply_overrides
 from cslr.models.build_model import build_model
 from cslr.data_loader.build_dataloader import build_loaders
-from cslr.engine.authors_eval import evaluate_single_sample_authors
+from cslr.engine.authors_eval import evaluate_single_by_index_authors
 
 def parse_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument("-c", "--config", required=True)
+    ap.add_argument("-c","--config", required=True)
     ap.add_argument("--override", nargs="*", default=[])
-    ap.add_argument("--mode", choices=["train", "dev", "test"], default="dev")
-    ap.add_argument("--file_id", required=True, help="Exact STM ID (eg, 29July_2010_Thursday_heute_default-7)")
+    ap.add_argument("--mode", choices=["train","dev","test"], default="dev")
+    ap.add_argument("--index", type=int, required=True, help="dataset index within the split")
     return ap.parse_args()
-
 
 def main():
     args = parse_args()
     cfg = Box(apply_overrides(load_config(args.config), args.override))
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
 
+    # model + loaders
     model = build_model(cfg).to(device).eval()
 
     if cfg.sanity_checks.enabled:
@@ -51,19 +51,9 @@ def main():
     train_loader, dev_loader, test_loader = build_loaders(cfg, kernel_spec=model.kernel_spec)
     loader = {"train": train_loader, "dev": dev_loader, "test": test_loader}[args.mode]
 
-    save_dir = Path(cfg.trainer.save_dir)
-    save_dir.mkdir(parents=True, exist_ok=True)
-    wer = evaluate_single_sample_authors(
-        cfg,
-        model,
-        device,
-        args.mode,
-        args.file_id,
-        loader,
-        work_dir=str(save_dir)
-    )
-    print(f"[single-{args.mode}] {args.file_id}  WER: {wer:.2f}%")
-
+    save_dir = Path(cfg.trainer.save_dir); save_dir.mkdir(parents=True, exist_ok=True)
+    dic = evaluate_single_by_index_authors(cfg, model, device, args.mode, args.index, loader, work_dir=str(save_dir))
+    print(f"[single-{args.mode}] idx={args.index}  WER: {dic['wer']:.2f}%  INFO: {dic['info']}")
 
 if __name__ == "__main__":
     main()

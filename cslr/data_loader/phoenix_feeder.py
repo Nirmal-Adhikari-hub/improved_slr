@@ -83,6 +83,7 @@ class PhoenixFeeder(Dataset):
             )
         
     def __len__(self):
+        # last entry in *_info.npy is a meta/sentinel row in our export; exclude it
         return len(self.inputs_list) - 1
     
     # -------------------- IO --------------------

@@ -317,7 +317,7 @@ def slowfast101(slowfast_config='SLOWFAST_64x2_R101_50_50.yaml', slowfast_args=[
         cfg.merge_from_list(slowfast_args)
     model = SlowFast(cfg, multi)
     if load_pkl:
-        load_checkpoint('cslr/models/slowfast/pretrained_ckpt/SLOWFAST_64x2_R101_50_50.pkl', model)
+        load_checkpoint('/shared/home/xvoice/nirmal/gradcam/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt', model)
         print(f"[SLOWFAST.py] Loaded checkpoint for {slowfast_config}")
     return model
 

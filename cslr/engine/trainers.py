@@ -21,7 +21,7 @@ def train_one_epoch(
         epoch: int,
         global_step: int,
 ) -> Dict[str, float]:
-    model.train.to(device)
+    model.train().to(device)
     optim.zero_grad(set_to_none=True)
     epoch_loss, seen = 0.0, 0
     t0 = time.time()
@@ -39,11 +39,12 @@ def train_one_epoch(
         labels, lab_lens = labels.to(device), lab_lens.to(device)
 
         with torch.cuda.amp.autocast(enabled=amp_enabled):
-            out = model(vids, vid_lens, labels=labels, label_lgt=labels)
+            out = model(vids, vid_lens, label=labels, label_lgt=lab_lens)
             loss = model.compute_loss(out, labels, lab_lens)
             if loss.dim() > 0: loss = loss.mean()
 
-        (scaler.scale(loss) if amp_enabled else loss).div_(max(1, grad_accum)).backward()
+        loss_scaled = loss.div(max(1, grad_accum))
+        (scaler.scale(loss_scaled) if amp_enabled else loss_scaled).backward()
         accum += 1
 
         if accum ==  grad_accum:
@@ -52,10 +53,11 @@ def train_one_epoch(
             else:
                 optim.step()
             optim.zero_grad(set_to_none=True)
-            accum = 0
-            if ema is not None: ema.update(model)
+            
             if is_onecycle and sched is not None:
                 sched.step() # per-step for OneCycleLR
+            if ema is not None: ema.update(model)
+            accum = 0
 
         # stats/logging
         bs = vids.size(0)
@@ -64,13 +66,13 @@ def train_one_epoch(
         global_step += 1
 
         if it % log_every == 0:
-            ips = seen / (time.time() -  t0 + 1e-6)
+            samples_per_sec = seen / (time.time() -  t0 + 1e-6)
             lr = optim.param_groups[0]["lr"]
-            exp.log_info(f"[epoch {epoch} it {it}/{n_batches}] loss {loss.item():.4f} | imgs/s {ips:.1f} | lr {lr: .6f}")
+            exp.log_info(f"[epoch {epoch} it {it}/{n_batches}] loss {loss.item():.4f} | samples/s {samples_per_sec:.1f} | lr {lr: .6f}")
             exp.log_scalars(
                 {
-                    "train/los": float(loss.item()),
-                    "train/imgs_per_s": float(ips),
+                    "train/loss": float(loss.item()),
+                    "train/samples_per_sec": float(samples_per_sec),
                     "train/lr": float(lr),
                     "meta/epoch": epoch
                 },
@@ -82,9 +84,10 @@ def train_one_epoch(
         if amp_enabled: scaler.step(optim); scaler.update()
         else: optim.step()
         optim.zero_grad(set_to_none=True)
-        if ema is not None: ema.update(model)
+        
         if is_onecycle and sched is not None:
             sched.step()
+        if ema is not None: ema.update(model)
 
     avg = epoch_loss / max(1, seen)
     return {

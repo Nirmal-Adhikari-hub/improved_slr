@@ -6,8 +6,8 @@ dataset_info:
 
 data:
   dataset: "phoenix2014"
-  # dataset_root: "/nas/Dataset/Phoenix/phoenix2014-release/phoenix-2014-multisigner"
-  dataset_root: "/shared/home/xvoice/nirmal/SlowFastSign/dataset/phoenix2014/phoenix-2014-multisigner"
+  dataset_root: "/nas/Dataset/Phoenix/phoenix2014-release/phoenix-2014-multisigner"
+  # dataset_root: "/shared/home/xvoice/nirmal/SlowFastSign/dataset/phoenix2014/phoenix-2014-multisigner"
   frame_subdir: "features/fullFrame-256x256px"
   preprocess_root: "./preprocess"
   gloss_dict_path: "./preprocess/phoenix2014/gloss_dict.npy"
@@ -36,6 +36,7 @@ model:
   use_bn: 1
   hidden_size: 1024
   load_pkl: false # [IMPORTANT -  make this true in real training]
+  load_pkl_path: "/shared/home/xvoice/nirmal/gradcam/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
   weight_norm: true
   share_classifier: 1
 
@@ -48,6 +49,8 @@ model:
     # VAC
     ConvCTC: 1.0
     Dist: 25.0
+    Slow: 0.25   # train the Slow stream heads
+    Fast: 0.25   # train the Fast stream heads
   #load_weights: ''
 
 optimiser:
@@ -65,8 +68,6 @@ trainer:
   save_dir: "outputs"
   grad_accum_steps: 1
   amp: true
-  ema: false
-  ema_decay: 0.999
 
   resume: true
   ema: true
@@ -82,14 +83,12 @@ logging:
   wandb_tags: ["phoenix2014", "slowfast", "step1"]
   wandb_watch_gradients: false # gradients can be heavy
   wandb_watch_freq: 200
-  wandb_log_artifacts: true # upload last.pth each epoch
   # control when to upload model artifact to W&B
   wandb_artifact_policy: "end" # one of "none" | "every_epoch" | "end"
 
 eval:
   decode: "beam" # "beam" | "greedy" ("greedy" not supported yet)
   beam_width: 10 # as in the original slowfast repo
-  run_test_mid_epoch: true # mid-epoch test eval
   log_examples: 0 # how many (ref vs hyp) pairs to print; 0 disables
 
 
@@ -100,7 +99,7 @@ sanity_checks:
   enabled: true
   set: "train" # dataset to pass through model's forward pass. "train" | "dev" 
   index: 2275 # index of the sample
-  author_ckpt_path: "/shared/home/xvoice/nirmal/gradcam/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
-  # author_ckpt_path: "/home/nirmal/SlowFast/GradCAMs/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
+  # author_ckpt_path: "/shared/home/xvoice/nirmal/gradcam/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
+  author_ckpt_path: "/home/nirmal/SlowFast/GradCAMs/checkpoints/slow_fast_phoenix2014_dev_18.01_test_18.28.pt"
 
 

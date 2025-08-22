@@ -1,1 +1,1 @@
-PYTHONPATH=. python scripts/eval_one.py -c configs/model_legacy_slowfast.yaml --mode train --file_id 12January_2011_Wednesday_tagesschau_default-5
+PYTHONPATH=. python scripts/eval_one_by_index.py -c configs/model_legacy_slowfast.yaml --mode train --index 5670
